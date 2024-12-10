@@ -1,164 +1,92 @@
-namespace ConsoleApp25
+namespace ConsoleApp24
 {
     //завдання 1
-    class Money
+    class CreditCard
     {
-        private int wholePart;
-        private int fractionalPart;
-        public Money(int wholePart, int fractionalPart)
-        {
-            if (wholePart < 0 || fractionalPart < 0 || fractionalPart >= 100)
-                throw new ArgumentException("Неправильні значення для грошей.");
+        private string cardNumber;
+        private string fullName;
+        private int cvc;
+        private DateTime expirationDate;
+        private int balance;
 
-            this.wholePart = wholePart;
-            this.fractionalPart = fractionalPart;
-        }
-        public int WholePart
+        public CreditCard(string cardNumber, string fullName, int cvc, DateTime expirationDate, int initialBalance)
         {
-            get { return wholePart; }
-            set
-            {
-                if (value < 0)
-                    throw new ArgumentException("Ціла частина не може бути від'ємною.");
-                wholePart = value;
-            }
+            if (string.IsNullOrWhiteSpace(cardNumber) || cardNumber.Length != 16 || !long.TryParse(cardNumber, out _))
+                throw new ArgumentException("Номер картки має бути 16 цифр.");
+
+            if (string.IsNullOrWhiteSpace(fullName))
+                throw new ArgumentException("ПІБ власника не може бути порожнім.");
+
+            if (cvc < 100 || cvc > 999)
+                throw new ArgumentException("CVC-код має бути три цифри.");
+
+            if (expirationDate < DateTime.Today)
+                throw new ArgumentException("Дата завершення терміну дії має бути у майбутньому.");
+
+            if (initialBalance < 0)
+                throw new ArgumentException("Сума грошей на картці не може бути від'ємною.");
+
+            this.cardNumber = cardNumber;
+            this.fullName = fullName;
+            this.cvc = cvc;
+            this.expirationDate = expirationDate;
+            this.balance = initialBalance;
         }
-        public int FractionalPart
+        public int Balance
         {
-            get { return fractionalPart; }
-            set
-            {
-                if (value < 0 || value >= 100)
-                    throw new ArgumentException("Дрібна частина має бути в межах від 0 до 99.");
-                fractionalPart = value;
-            }
+            get { return balance; }
+            set { balance = value; }
         }
-        public void Display()
+        public static CreditCard operator +(CreditCard card, int amount)
         {
-            Console.WriteLine($"Сума: {wholePart}.{fractionalPart:00}");
+            card.balance += amount;
+            return card;
         }
-        public void SetValues(int whole, int fractional)
+        public static CreditCard operator -(CreditCard card, int amount)
         {
-            WholePart = whole;
-            FractionalPart = fractional;
+            if (card.balance < amount)
+                throw new InvalidOperationException("На картці недостатньо коштів.");
+
+            card.balance -= amount;
+            return card;
+        }
+        public static bool operator ==(CreditCard card, int cvcCode)
+        {
+            return card.cvc == cvcCode;
+        }
+
+        public static bool operator !=(CreditCard card, int cvcCode)
+        {
+            return card.cvc != cvcCode;
+        }
+        public static bool operator <(CreditCard card, int amount)
+        {
+            return card.balance < amount;
+        }
+
+        public static bool operator >(CreditCard card, int amount)
+        {
+            return card.balance > amount;
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj is CreditCard)
+                return this.cvc == ((CreditCard)obj).cvc;
+            return false;
+        }
+        public override int GetHashCode()
+        {
+            return cvc.GetHashCode();
+        }
+        public void DisplayCardInfo()
+        {
+            Console.WriteLine($"Номер картки: {cardNumber}");
+            Console.WriteLine($"ПІБ власника: {fullName}");
+            Console.WriteLine($"CVC: {cvc}");
+            Console.WriteLine($"Термін дії: {expirationDate.ToShortDateString()}");
+            Console.WriteLine($"Баланс: {balance}");
         }
     }
-
-    class Product
-    {
-        private string name;
-        private Money price;
-        public Product(string name, Money price)
-        {
-            this.name = name ?? throw new ArgumentException("Назва продукту не може бути порожньою.");
-            this.price = price ?? throw new ArgumentException("Ціна не може бути null.");
-        }
-        public string Name
-        {
-            get { return name; }
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    throw new ArgumentException("Назва продукту не може бути порожньою.");
-                name = value;
-            }
-        }
-        public Money Price
-        {
-            get { return price; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentException("Ціна не може бути null.");
-                price = value;
-            }
-        }
-        public void ReducePrice(int reduction)
-        {
-            if (reduction < 0)
-                throw new ArgumentException("Зменшення ціни має бути невід'ємним.");
-
-            int totalCents = price.WholePart * 100 + price.FractionalPart - reduction;
-
-            if (totalCents < 0)
-                throw new InvalidOperationException("Ціна не може бути від'ємною.");
-
-            price.WholePart = totalCents / 100;
-            price.FractionalPart = totalCents % 100;
-        }
-
-        public void DisplayProductInfo()
-        {
-            Console.WriteLine($"Назва продукту: {name}");
-            Console.Write("Ціна продукту: ");
-            price.Display();
-        }
-    }
-
-    //завдання 2
-
-    class Device
-    {
-        protected string Name { get; set; }
-        protected string Characteristics { get; set; }
-        public Device(string name, string characteristics)
-        {
-            Name = name;
-            Characteristics = characteristics;
-        }
-        public virtual void Sound()
-        {
-            Console.WriteLine("Пристрій видає звук.");
-        }
-        public void Show()
-        {
-            Console.WriteLine($"Назва пристрою: {Name}");
-        }
-        public void Desc()
-        {
-            Console.WriteLine($"Опис пристрою: {Characteristics}");
-        }
-    }
-
-    class Kettle : Device
-    {
-        public Kettle(string name, string characteristics) : base(name, characteristics) { }
-
-        public override void Sound()
-        {
-            Console.WriteLine("Шшш...");
-        }
-    }
-
-    class Microwave : Device
-    {
-        public Microwave(string name, string characteristics) : base(name, characteristics) { }
-
-        public override void Sound()
-        {
-            Console.WriteLine("Біп-біп");
-        }
-    }
-    class Car : Device
-    {
-        public Car(string name, string characteristics) : base(name, characteristics) { }
-
-        public override void Sound()
-        {
-            Console.WriteLine("Бррр...");
-        }
-    }
-    class Steamboat : Device
-    {
-        public Steamboat(string name, string characteristics) : base(name, characteristics) { }
-
-        public override void Sound()
-        {
-            Console.WriteLine("Ту-тууу!");
-        }
-    }
-
-
     internal class Program
     {
         static void Main(string[] args)
@@ -166,42 +94,45 @@ namespace ConsoleApp25
             //завдання 1
             try
             {
-                Money productPrice = new Money(19, 70);
+                string cardNumber = "1234567812345678";
+                string fullName = "Кузнєцова Дарія";
+                int cvc = 123;
+                DateTime expirationDate = new DateTime(2024, 12, 31);
+                int initialBalance = 500;
 
-                Product product = new Product("Жуйка", productPrice);
+                CreditCard card = new CreditCard(cardNumber, fullName, cvc, expirationDate, initialBalance);
 
-                Console.WriteLine("Інформація про продукт:");
-                product.DisplayProductInfo();
+                Console.WriteLine("\nІнформація про картку:");
+                card.DisplayCardInfo();
 
-                Console.WriteLine("\nЗменшення на 50 копійок.");
-                product.ReducePrice(50);
+                Console.WriteLine("\nЗбільшуємо баланс на 100.");
+                card = card + 100;
+                card.DisplayCardInfo();
 
-                Console.WriteLine("Оновлена інформація про продукт:");
-                product.DisplayProductInfo();
+                Console.WriteLine("\nЗменшуємо баланс на 50.");
+                card = card - 50;
+                card.DisplayCardInfo();
+
+                Console.WriteLine("\nПеревіряємо CVC-код:");
+                if (card == 123)
+                    Console.WriteLine("CVC-код співпадає.");
+                else
+                    Console.WriteLine("CVC-код не співпадає.");
+
+                Console.WriteLine("\nПеревірка суми грошей:");
+                if (card < 1000)
+                    Console.WriteLine("Баланс менше 1000.");
+                if (card > 200)
+                    Console.WriteLine("Баланс більше 200.");
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
                 Console.WriteLine($"Помилка: {ex.Message}");
             }
-
-            //завдання 2
-
-            Device kettle = new Kettle("Чайник", "Електричний, 2 л");
-            Device microwave = new Microwave("Мікрохвильовка", "Потужність 900 Вт");
-            Device car = new Car("Автомобіль", "Електричний, Tesla Model 3");
-            Device steamboat = new Steamboat("Пароплав", "Пасажирський, 300 місць");
-
-            Device[] devices = { kettle, microwave, car, steamboat };
-
-            foreach (var device in devices)
+            catch (InvalidOperationException ex)
             {
-                device.Show();
-                device.Desc();
-                device.Sound();
-                Console.WriteLine();
+                Console.WriteLine($"Помилка: {ex.Message}");
             }
-
-
         }
     }
 }
